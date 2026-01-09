@@ -1,0 +1,117 @@
+# ---------------------
+# Imports
+# ---------------------
+import streamlit as st
+from flip7_scorer.core import advisor_logic
+
+# ---------------------
+# Helper Functions
+# ---------------------
+def parse_card_input(input_str):
+    if not input_str.strip():
+        return []
+
+    cards = [card.strip().lower() for card in input_str.split(",")]
+    return [card for card in cards if card]  # Filter empty strings
+
+
+def display_legend():
+    st.markdown("##### Types of Cards: ")
+    st.markdown("0-12, +2, +4, +6, +8, +10, x2, sc, f3, fr")
+    st.markdown("sc = second chance, f3 = flip 3, fr = freeze")
+
+
+# ---------------------
+# Page
+# ---------------------
+def show():
+    st.title("Tofu's Flip Seven Advisor")
+    st.write("NOTE: F3 calculator not yet implemented.")
+    st.markdown("---")
+
+    # Display legend
+    display_legend()
+
+    st.markdown("---")
+
+    # Input fields
+    st.markdown("### Enter Your Cards")
+    st.caption("Enter cards as comma-separated values (e.g., 2, 10, 8, 3, sc)")
+
+    drawn_input = st.text_input(
+        "**Drawn** (Your Cards):",
+        placeholder="e.g., 2, 10, 1, 3, 8"
+    )
+
+    seen_input = st.text_input(
+        "**Seen** (Other People's Cards):",
+        placeholder="e.g., 11, 12, x2, sc"
+    )
+
+    # Advise button
+    if st.button("Advise", type="primary", use_container_width=True):
+        # Parse inputs
+        drawn_cards = parse_card_input(drawn_input)
+        seen_cards = parse_card_input(seen_input)
+
+        if not drawn_cards:
+            st.warning("Please enter at least one card in your hand.")
+            return
+
+        # Build deck and remove cards
+        deck = advisor_logic.build_master_deck()
+        deck = advisor_logic.pop_from_deck(drawn_cards, deck)
+        deck = advisor_logic.pop_from_deck(seen_cards, deck)
+
+        # Get advice
+        advice = advisor_logic.check_bust(drawn_cards, deck)
+
+        # Display results
+        st.markdown("---")
+        st.markdown("### Advice Results")
+
+        # Main recommendation
+        rec_color = "green" if advice["recommendation"] == "HIT" else "red"
+        st.markdown(
+            f"<h2 style='color: {rec_color};'>{advice['recommendation']}</h2>",
+            unsafe_allow_html=True
+        )
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.metric("Current Score", f"{advice['current_score']}")
+
+        with col2:
+            st.metric("Expected Value", f"{advice['expected_value']:.2f}")
+
+        # Expected values breakdown
+        st.markdown("#### Expected Values by Card")
+        ev_text = ""
+        for card, perc, total, delta, ev in advice["expected_values_data"]:
+            tag = f"+{delta}" if delta > 0 else str(delta)
+            ev_text += f"`{card:>3}` ({perc*100:5.2f}%) → {total:>3} ({tag:>4}) | EV: {ev:>6.2f}\n\n"
+        st.markdown(ev_text)
+
+        # Bust information
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.markdown(f"#### Bust Chance: {advice['bust_chance']*100:.2f}%")
+            if advice["bustable"]:
+                bust_text = ""
+                for card, perc in advice["bustable"]:
+                    bust_text += f"`{card:>3}` ({perc*100:5.2f}%)\n\n"
+                st.markdown(bust_text)
+            else:
+                st.markdown("*No bust cards remaining*")
+
+        with col2:
+            st.markdown(f"#### Event Chance: {advice['event_chance']*100:.2f}%")
+            if advice["events"]:
+                event_text = ""
+                for card, perc in advice["events"]:
+                    event_text += f"`{card:>3}` ({perc*100:5.2f}%)\n\n"
+                st.markdown(event_text)
+            else:
+                st.markdown("*No event cards remaining*")
