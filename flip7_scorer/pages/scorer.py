@@ -3,6 +3,7 @@
 # ---------------------
 import streamlit as st
 import pandas as pd
+import matplotlib  # Required for pandas styling with background_gradient
 import flip7_scorer.core.scoring as scoring
 import flip7_scorer.core.default_fields as default
 
@@ -10,7 +11,7 @@ import flip7_scorer.core.default_fields as default
 # Page
 # ---------------------
 def show():
-    st.title("Tofu's Flip7 Scorer")
+    st.title("Tofu's Flip Seven Scorer")
     scoring.initialize_session_state()
 
     if not st.session_state.game_started:

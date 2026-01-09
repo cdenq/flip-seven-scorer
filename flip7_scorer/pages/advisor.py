@@ -38,18 +38,47 @@ def show():
     st.markdown("### Enter Your Cards")
     st.caption("Enter cards as comma-separated values (e.g., 2, 10, 8, 3, sc)")
 
+    # Initialize session state for inputs if not present
+    if "drawn_input" not in st.session_state:
+        st.session_state.drawn_input = ""
+    if "seen_input" not in st.session_state:
+        st.session_state.seen_input = ""
+
     drawn_input = st.text_input(
         "**Drawn** (Your Cards):",
-        placeholder="e.g., 2, 10, 1, 3, 8"
+        value=st.session_state.drawn_input,
+        placeholder="e.g., 2, 10, 1, 3, 8",
+        key="drawn_text_input"
     )
 
     seen_input = st.text_input(
         "**Seen** (Other People's Cards):",
-        placeholder="e.g., 11, 12, x2, sc"
+        value=st.session_state.seen_input,
+        placeholder="e.g., 11, 12, x2, sc",
+        key="seen_text_input"
     )
 
-    # Advise button
-    if st.button("Advise", type="primary", use_container_width=True):
+    # Update session state
+    st.session_state.drawn_input = drawn_input
+    st.session_state.seen_input = seen_input
+
+    # Buttons
+    col_advise, col_clear = st.columns(2)
+
+    with col_advise:
+        advise_clicked = st.button("Advise", type="primary", use_container_width=True)
+
+    with col_clear:
+        clear_clicked = st.button("Clear", use_container_width=True)
+
+    # Handle Clear button
+    if clear_clicked:
+        st.session_state.drawn_input = ""
+        st.session_state.seen_input = ""
+        st.rerun()
+
+    # Handle Advise button
+    if advise_clicked:
         # Parse inputs
         drawn_cards = parse_card_input(drawn_input)
         seen_cards = parse_card_input(seen_input)
@@ -77,13 +106,26 @@ def show():
             unsafe_allow_html=True
         )
 
-        col1, col2 = st.columns(2)
+        col1, col2, col3 = st.columns(3)
 
         with col1:
             st.metric("Current Score", f"{advice['current_score']}")
 
         with col2:
             st.metric("Expected Value", f"{advice['expected_value']:.2f}")
+
+        with col3:
+            # Display unique numbers with special styling if flip seven achieved
+            unique_label = "Numbers Until Flip7"
+            unique_value = f"{advice['unique_numbers']}/7"
+            if advice['has_flip_seven']:
+                st.markdown(
+                    f"**{unique_label}**  \n"
+                    f"<span style='color: gold; font-size: 24px;'>✨ {unique_value} ✨</span>",
+                    unsafe_allow_html=True
+                )
+            else:
+                st.metric(unique_label, unique_value)
 
         # Expected values breakdown
         st.markdown("#### Expected Values by Card")

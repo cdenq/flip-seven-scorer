@@ -1,9 +1,12 @@
 # ---------------------
-# Advisor Logic Functions
+# Imports
 # ---------------------
 
+# ---------------------
+# Advisor Functions
+# ---------------------
 def build_master_deck():
-    """Build and return the complete Flip7 deck."""
+    """Build and return the complete deck."""
     deck = []
     for i in range(13):
         if i > 1:
@@ -72,11 +75,21 @@ def check_bust(drawn, deck):
     - bustable (list of tuples)
     - event_chance
     - events (list of tuples)
+    - unique_numbers (count of unique base numbers, excluding +n and x2)
+    - has_flip_seven (True if 7 unique numbers reached)
     """
     drawn = [str(item) for item in drawn]
 
     # Current score
     curr_score = calc_score(drawn)
+
+    # Count unique base numbers (not +n, x2, or events)
+    unique_nums = set()
+    for item in drawn:
+        if item not in ["sc", "f3", "fr"] and "x" not in item and "+" not in item:
+            unique_nums.add(item)
+    unique_count = len(unique_nums)
+    has_flip_seven = unique_count == 7
 
     # Counting cards left
     cards_left = len(deck)
@@ -137,4 +150,6 @@ def check_bust(drawn, deck):
         "bustable": bustable,
         "event_chance": event_total,
         "events": events,
+        "unique_numbers": unique_count,
+        "has_flip_seven": has_flip_seven,
     }
